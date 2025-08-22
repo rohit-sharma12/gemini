@@ -1,118 +1,159 @@
 import { Mic, Plus, Search, Image, BookOpen, Menu, Send } from "lucide-react";
-import { useState } from 'react'
+import { useState } from "react";
 import { GEMINI_API_URL } from "../../config/gemini";
 
 const Main = () => {
-    const [question, setQuestion] = useState('');
+    const [question, setQuestion] = useState("");
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // const payload = {
-    //     "contents": [{
-    //         "parts": [{ "text": 'Explain React.js' }]
-    //     }]
-    // }
+    const payload = {
+        contents: [{ parts: [{ text: question }] }],
+    };
+
     const askQuestion = async () => {
-        const payload = {
-            contents: [{
-                parts: [{ text: question }]
-            }]
-        };
+        if (!question.trim()) return;
+
+        setLoading(true); // ✅ Start loader
+        setResult(null);  // clear previous result
 
         try {
-            let response = await fetch(GEMINI_API_URL, { // Use your backend proxy
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            let response = await fetch(
+                GEMINI_API_URL + "?key=AIzaSyC6j0BPMcaMk0WHGu6485upgVL89zzuiBA",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                }
+            );
+
             response = await response.json();
-            console.log(response);
+            const answer =
+                response.candidates[0]?.content?.parts[0]?.text || "No response";
+            setResult(answer);
         } catch (error) {
-            console.error("API error:", error);
+            setResult("Something went wrong. Please try again.");
+            console.error(error);
+        } finally {
+            setLoading(false); // ✅ Stop loader
         }
     };
 
-    // const askQuestion = async () => {
-    //     let response = await fetch(GEMINI_API_URL, {
-    //         method: 'POST',
-    //         body: JSON.stringify(payload)
-    //     })
-    //     response = await response.json();
-    //     console.log(response);
 
-    // }
+    const formatResult = (text) => {
+        if (!text) return "";
+        return text
+            .replace(/\n\n/g, "</p><p>")     // Paragraphs
+            .replace(/\n- /g, "<li>")        // Bullet points
+            .replace(/<\/p><p><li>/g, "<ul><li>") // Start of list
+            .replace(/<\/li><p>/g, "</li></ul><p>"); // End list
+    };
+
 
     return (
         <div className="flex flex-col flex-1 bg-zinc-900 text-white">
             {/* Top Navbar */}
-            <div className="flex justify-between items-center px-4 sm:px-6 py-3 border-b border-zinc-800">
-                {/* Left side */}
+            <div className="flex justify-between items-center px-4 sm:px-6 py-3 border-b border-zinc-800 bg-zinc-950">
                 <div className="flex items-center space-x-3">
                     {/* Mobile Menu */}
                     <button className="md:hidden p-2 rounded-lg hover:bg-zinc-800">
                         <Menu className="w-6 h-6 text-gray-300" />
                     </button>
-
-                    <h1 className="text-base sm:text-lg font-semibold">Gemini</h1>
+                    <h1 className="text-lg sm:text-xl font-bold tracking-wide">Gemini</h1>
                 </div>
 
                 {/* Right side */}
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                    <button className="hidden sm:block bg-gray-800 px-3 py-1 rounded-lg text-xs sm:text-sm hover:bg-gray-700">
+                    <button className="hidden sm:block bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-md">
                         ✨ Upgrade
                     </button>
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-600 cursor-pointer"></div>
+                    <div className="w-9 h-9 rounded-full bg-gray-600 cursor-pointer border-2 border-gray-500"></div>
                 </div>
             </div>
 
-            {/* Center Greeting */}
-            <div className="flex flex-1 flex-col items-center justify-center text-center gap-3">
-                <h2 className="text-xl sm:text-2xl md:text-3xl text-blue-500 font-medium">
-                    Hello, Rohit
-                </h2>
-                <h2 className="text-xl sm:text-2xl md:text-3xl text-zinc-500 font-medium">
-                    How can I help you today?
-                </h2>
+            {/* Center Section */}
+            {/* Center Section */}
+            <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-6 overflow-y-auto">
+                {loading ? (
+                    <div className="w-full flex flex-col gap-5 animate-bounce">
+                        <div className="h-5 w-3/4 rounded bg-[#a0c9f1] " />
+                        <div className="h-5 w-2/3 rounded bg-[#b4d3f1] " />
+                        <div className="h-5 w-1/2 rounded bg-[#96c2ee] " />
+                    </div>
+                ) : !result ? (
+                    <div className="text-center space-y-3">
+                        <h2 className="text-2xl md:text-3xl font-semibold text-blue-500">
+                            Hello, Rohit 👋
+                        </h2>
+                        <p className="text-lg md:text-xl text-gray-400">
+                            How can I help you today?
+                        </p>
+                    </div>
+                ) : (
+                    <div className="p-[0px 5%] max-h-[70vh] overflow-y-scroll">
+                        <div className="pb-8">
+                            <p className="text-base sm:text-lg font-semibold text-gray-100">
+                                {question}
+                            </p>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <img
+                                src="/src/assets/gemini_icon.png"
+                                alt="Gemini"
+                                className="w-10 h-10 rounded-full"
+                            />
+                            <div className="prose prose-invert prose-sm sm:prose-base max-w-none text-gray-300 leading-relaxed">
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: `<p>${formatResult(result)}</p>`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Bottom Input Section */}
-            {/* Bottom Input Section */}
-            <div className="px-3 sm:px-6 pb-4 sm:pb-6 py mb-6">
-                <div className="bg-zinc-800 border border-gray-600 rounded-2xl p-3 
-                  max-w-2xl mx-auto w-full">
-                    {/* Input Row */}
+            <div className="px-4 sm:px-6 pb-6">
+                <div className="bg-zinc-800 border border-gray-700 rounded-2xl p-3 shadow-md max-w-2xl mx-auto w-full">
+                   
                     <div className="flex items-center space-x-3">
                         <Plus className="w-5 h-5 text-gray-300" />
                         <input
                             value={question}
                             onChange={(e) => setQuestion(e.target.value)}
                             type="text"
-                            placeholder="Ask Gemini"
-                            className="flex-1 bg-transparent outline-none text-sm sm:text-base placeholder-gray-400"
+                            placeholder="Ask Gemini anything..."
+                            className="flex-1 bg-transparent outline-none text-sm sm:text-base text-gray-100 placeholder-gray-400"
                         />
-                        <Mic className="w-5 h-5 text-gray-300 cursor-pointer" />
-                        <Send onClick={askQuestion} className="w-5 h-5 text-blue-500 cursor-pointer" />
+                        <Mic className="w-5 h-5 text-gray-300 cursor-pointer hover:text-blue-400" />
+                        <Send
+                            onClick={askQuestion}
+                            className="w-5 h-5 text-blue-500 cursor-pointer hover:text-blue-400 transition"
+                        />
                     </div>
 
-                    {/* Options */}
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:space-x-6 mt-3 text-xs sm:text-sm text-gray-300">
-                        <button className="flex items-center space-x-1 hover:text-white">
+                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs sm:text-sm text-gray-400">
+                        <button className="flex items-center gap-1 hover:text-white transition">
                             <Search className="w-4 h-4 sm:w-5 sm:h-5" />
                             <span>Deep Research</span>
                         </button>
-                        <button className="flex items-center space-x-1 hover:text-white">
+                        <button className="flex items-center gap-1 hover:text-white transition">
                             <Image className="w-4 h-4 sm:w-5 sm:h-5" />
                             <span>Image</span>
                         </button>
-                        <button className="flex items-center space-x-1 hover:text-white">
+                        <button className="flex items-center gap-1 hover:text-white transition">
                             <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
                             <span>Guided Learning</span>
                         </button>
                     </div>
                 </div>
             </div>
-
         </div >
     );
 };
 
 export default Main;
+
 
